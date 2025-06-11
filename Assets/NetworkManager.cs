@@ -9,6 +9,12 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         Connect();
     }
 
+    private void Awake()
+    {
+        // Initialize Photon
+        PhotonNetwork.AutomaticallySyncScene = true; // Automatically sync scene changes
+    }
+
     public void Connect()
     {
         // Connect to Photon server
@@ -31,7 +37,11 @@ public class NetworkManager : MonoBehaviourPunCallbacks
     {
         // Called when successfully joined a room
         Debug.Log("Joined Room: " + PhotonNetwork.CurrentRoom.Name);
-        // Here you can instantiate player objects or do other setup
+        if (PhotonNetwork.IsMasterClient)
+        {
+            // If this client is the master client, instantiate a player prefab
+            PhotonNetwork.LoadLevel(1);
+        }
     }
 
     // Update is called once per frame
