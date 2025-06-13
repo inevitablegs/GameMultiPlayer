@@ -17,3 +17,5 @@ UserSettings/
 *.svd
 *.pdb
 *.mdb
+*.zip
+*.tar.gz
