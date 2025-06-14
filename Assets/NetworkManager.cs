@@ -1,52 +1,87 @@
 using UnityEngine;
+using UnityEngine.UI;
 using Photon.Pun;
 using Photon.Realtime;
+using UnityEngine.SceneManagement;
+
 public class NetworkManager : MonoBehaviourPunCallbacks
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    public InputField roomCodeInput;
+    public GameObject uiPanel;
+    public Text connectionStatusText;
+
     void Start()
     {
-        Connect();
+        PhotonNetwork.GameVersion = "1.0";
+        PhotonNetwork.AutomaticallySyncScene = true;
+        PhotonNetwork.ConnectUsingSettings();
+        connectionStatusText.text = "Connecting to Photon...";
+        Debug.Log("Connecting to Photon...");
     }
 
-    private void Awake()
+    public override void OnConnectedToMaster()
     {
-        // Initialize Photon
-        PhotonNetwork.AutomaticallySyncScene = true; // Automatically sync scene changes
+        Debug.Log("Connected to Photon Master Server.");
+        connectionStatusText.text = "Connected to Master";
+
+        // Join the default lobby
+        PhotonNetwork.JoinLobby();
     }
 
-    public void Connect()
+    public override void OnDisconnected(DisconnectCause cause)
     {
-        // Connect to Photon server
+        Debug.LogError($"Disconnected from Photon: {cause}");
+        connectionStatusText.text = $"Disconnected: {cause}";
+
+        // Try to reconnect
         PhotonNetwork.ConnectUsingSettings();
     }
 
-    public void Play()
+    public override void OnJoinedLobby()
     {
-        PhotonNetwork.JoinRandomRoom();
+        Debug.Log("Joined Lobby");
+        connectionStatusText.text = "Connected and in Lobby";
+        uiPanel.SetActive(true); // Show UI panel when ready
     }
 
-    public override void OnJoinRandomFailed(short returnCode, string message)
+    public void CreateRoom()
     {
-        // If joining a random room fails, create a new room
-        Debug.Log("Join Random Room Failed: " + message);
-        PhotonNetwork.CreateRoom(null, new RoomOptions { MaxPlayers = 4 });
+        string roomName = roomCodeInput.text;
+        if (!string.IsNullOrEmpty(roomName))
+        {
+            RoomOptions options = new RoomOptions { MaxPlayers = 4 };
+            PhotonNetwork.CreateRoom(roomName, options);
+            connectionStatusText.text = "Creating room...";
+        }
+    }
+
+    public void JoinRoom()
+    {
+        string roomName = roomCodeInput.text;
+        if (!string.IsNullOrEmpty(roomName))
+        {
+            PhotonNetwork.JoinRoom(roomName);
+            connectionStatusText.text = "Joining room...";
+        }
     }
 
     public override void OnJoinedRoom()
     {
-        // Called when successfully joined a room
         Debug.Log("Joined Room: " + PhotonNetwork.CurrentRoom.Name);
-        if (PhotonNetwork.IsMasterClient)
-        {
-            // If this client is the master client, instantiate a player prefab
-            PhotonNetwork.LoadLevel(1);
-        }
+        connectionStatusText.text = "Joined Room - Loading level...";
+        PhotonNetwork.LoadLevel(1);
     }
 
-    // Update is called once per frame
-    void Update()
+    public override void OnJoinRoomFailed(short returnCode, string message)
     {
-        
+        Debug.Log("Failed to join room: " + message);
+        connectionStatusText.text = $"Join failed: {message}";
     }
+
+    public override void OnCreateRoomFailed(short returnCode, string message)
+    {
+        Debug.Log("Failed to create room: " + message);
+        connectionStatusText.text = $"Create failed: {message}";
+    }
+
 }
